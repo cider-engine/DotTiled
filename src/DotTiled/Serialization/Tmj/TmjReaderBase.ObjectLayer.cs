@@ -82,7 +82,7 @@ public abstract partial class TmjReaderBase
     Template template = null;
     if (templateSource.HasValue)
     {
-      template = _externalTemplateResolver(templateSource.Value);
+      template = _externalTemplateResolver(templateSource.Value).GetAwaiter().GetResult();
       var templObj = template.Object.Clone();
 
       idDefault = templObj.ID;

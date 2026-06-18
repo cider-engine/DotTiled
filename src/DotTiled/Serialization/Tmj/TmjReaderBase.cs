@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Text.Json;
 
 namespace DotTiled.Serialization.Tmj;
@@ -11,8 +12,8 @@ namespace DotTiled.Serialization.Tmj;
 public abstract partial class TmjReaderBase : IDisposable
 {
   // External resolvers
-  private readonly Func<string, Tileset> _externalTilesetResolver;
-  private readonly Func<string, Template> _externalTemplateResolver;
+  private readonly Func<string, Task<Tileset>> _externalTilesetResolver;
+  private readonly Func<string, Task<Template>> _externalTemplateResolver;
   private readonly Func<string, Optional<ICustomTypeDefinition>> _customTypeResolver;
 
   /// <summary>
@@ -32,8 +33,8 @@ public abstract partial class TmjReaderBase : IDisposable
   /// <exception cref="ArgumentNullException">Thrown when any of the arguments are null.</exception>
   protected TmjReaderBase(
     string jsonString,
-    Func<string, Tileset> externalTilesetResolver,
-    Func<string, Template> externalTemplateResolver,
+    Func<string, Task<Tileset>> externalTilesetResolver,
+    Func<string, Task<Template>> externalTemplateResolver,
     Func<string, Optional<ICustomTypeDefinition>> customTypeResolver)
   {
     RootElement = JsonDocument.Parse(jsonString ?? throw new ArgumentNullException(nameof(jsonString))).RootElement;

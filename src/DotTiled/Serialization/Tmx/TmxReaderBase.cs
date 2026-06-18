@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace DotTiled.Serialization.Tmx;
@@ -10,8 +11,8 @@ namespace DotTiled.Serialization.Tmx;
 public abstract partial class TmxReaderBase : IDisposable
 {
   // External resolvers
-  private readonly Func<string, Tileset> _externalTilesetResolver;
-  private readonly Func<string, Template> _externalTemplateResolver;
+  private readonly Func<string, Task<Tileset>> _externalTilesetResolver;
+  private readonly Func<string, Task<Template>> _externalTemplateResolver;
   private readonly Func<string, Optional<ICustomTypeDefinition>> _customTypeResolver;
 
   private readonly XmlReader _reader;
@@ -27,8 +28,8 @@ public abstract partial class TmxReaderBase : IDisposable
   /// <exception cref="ArgumentNullException">Thrown when any of the arguments are null.</exception>
   protected TmxReaderBase(
     XmlReader reader,
-    Func<string, Tileset> externalTilesetResolver,
-    Func<string, Template> externalTemplateResolver,
+    Func<string, Task<Tileset>> externalTilesetResolver,
+    Func<string, Task<Template>> externalTemplateResolver,
     Func<string, Optional<ICustomTypeDefinition>> customTypeResolver)
   {
     _reader = reader ?? throw new ArgumentNullException(nameof(reader));

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization;
 
@@ -13,9 +14,5 @@ public class FileSystemResourceReader : IResourceReader
   public FileSystemResourceReader() { }
 
   /// <inheritdoc/>
-  public string Read(string resourcePath)
-  {
-    using var streamReader = new StreamReader(resourcePath);
-    return streamReader.ReadToEnd();
-  }
+  public Task<string> ReadAsync(string resourcePath) => File.ReadAllTextAsync(resourcePath);
 }

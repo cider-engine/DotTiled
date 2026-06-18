@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization;
 
@@ -57,12 +58,19 @@ public class Loader
   /// </summary>
   /// <param name="mapPath">The path to the map file.</param>
   /// <returns>The loaded map.</returns>
-  public Map LoadMap(string mapPath)
+  public Map LoadMap(string mapPath) => LoadMapAsync(mapPath).GetAwaiter().GetResult();
+
+  /// <summary>
+  /// Loads a map from the given <paramref name="mapPath"/>.
+  /// </summary>
+  /// <param name="mapPath">The path to the map file.</param>
+  /// <returns>The loaded map.</returns>
+  public async Task<Map> LoadMapAsync(string mapPath)
   {
     var basePath = Path.GetDirectoryName(mapPath);
-    string mapContent = _resourceReader.Read(mapPath);
+    string mapContent = await _resourceReader.ReadAsync(mapPath);
     using var mapReader = new MapReader(mapContent, GetTilesetResolver(basePath), GetTemplateResolver(basePath), CustomTypeResolver);
-    return mapReader.ReadMap();
+    return await mapReader.ReadMapAsync();
   }
 
   /// <summary>
@@ -70,48 +78,55 @@ public class Loader
   /// </summary>
   /// <param name="tilesetPath">The path to the tileset file.</param>
   /// <returns>The loaded tileset.</returns>
-  public Tileset LoadTileset(string tilesetPath)
+  public Tileset LoadTileset(string tilesetPath) => LoadTilesetAsync(tilesetPath).GetAwaiter().GetResult();
+
+  /// <summary>
+  /// Loads a tileset from the given <paramref name="tilesetPath"/>.
+  /// </summary>
+  /// <param name="tilesetPath">The path to the tileset file.</param>
+  /// <returns>The loaded tileset.</returns>
+  public async Task<Tileset> LoadTilesetAsync(string tilesetPath)
   {
     var basePath = Path.GetDirectoryName(tilesetPath);
-    string tilesetContent = _resourceReader.Read(tilesetPath);
+    string tilesetContent = await _resourceReader.ReadAsync(tilesetPath);
     using var tilesetReader = new TilesetReader(tilesetContent, GetTilesetResolver(basePath), GetTemplateResolver(basePath), CustomTypeResolver);
-    return tilesetReader.ReadTileset();
+    return await tilesetReader.ReadTilesetAsync();
   }
 
-  private Func<string, T> GetResolverFunc<T>(
+  private Func<string, Task<T>> GetResolverFunc<T>(
     string basePath,
     Func<string, Optional<T>> cacheResolver,
     Action<string, T> cacheInsert,
-    Func<string, T> resolveFromContent)
+    Func<string, Task<T>> resolveFromContent)
   {
-    return source =>
+    return async source =>
     {
       var resourcePath = Path.Combine(basePath, source);
       var cachedResource = cacheResolver(resourcePath);
       if (cachedResource.HasValue)
         return cachedResource.Value;
 
-      string tilesetContent = _resourceReader.Read(resourcePath);
-      var resource = resolveFromContent(tilesetContent);
+      string resourceContent = await _resourceReader.ReadAsync(resourcePath);
+      var resource = await resolveFromContent(resourceContent);
       cacheInsert(resourcePath, resource);
       return resource;
     };
   }
 
-  private Func<string, Tileset> GetTilesetResolver(string basePath) =>
+  private Func<string, Task<Tileset>> GetTilesetResolver(string basePath) =>
     GetResolverFunc<Tileset>(basePath, _resourceCache.GetTileset, _resourceCache.InsertTileset,
-      tilesetContent =>
+      async tilesetContent =>
       {
         using var tilesetReader = new TilesetReader(tilesetContent, GetTilesetResolver(basePath), GetTemplateResolver(basePath), CustomTypeResolver);
-        return tilesetReader.ReadTileset();
+        return await tilesetReader.ReadTilesetAsync();
       });
 
-  private Func<string, Template> GetTemplateResolver(string basePath) =>
+  private Func<string, Task<Template>> GetTemplateResolver(string basePath) =>
     GetResolverFunc<Template>(basePath, _resourceCache.GetTemplate, _resourceCache.InsertTemplate,
-      templateContent =>
+      async templateContent =>
       {
         using var templateReader = new TemplateReader(templateContent, GetTilesetResolver(basePath), GetTemplateResolver(basePath), CustomTypeResolver);
-        return templateReader.ReadTemplate();
+        return await templateReader.ReadTemplateAsync();
       });
 
   private Optional<ICustomTypeDefinition> CustomTypeResolver(string name)

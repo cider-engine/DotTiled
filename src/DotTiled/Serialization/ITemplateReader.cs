@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization;
 
@@ -11,5 +12,5 @@ public interface ITemplateReader : IDisposable
   /// Reads a template from the source.
   /// </summary>
   /// <returns>The parsed template.</returns>
-  Template ReadTemplate();
+  Task<Template> ReadTemplateAsync();
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization.Tmj;
 
@@ -17,12 +18,15 @@ public class TjTemplateReader : TmjReaderBase, ITemplateReader
   /// <exception cref="ArgumentNullException">Thrown when any of the arguments are null.</exception>
   public TjTemplateReader(
     string jsonString,
-    Func<string, Tileset> externalTilesetResolver,
-    Func<string, Template> externalTemplateResolver,
+    Func<string, Task<Tileset>> externalTilesetResolver,
+    Func<string, Task<Template>> externalTemplateResolver,
     Func<string, Optional<ICustomTypeDefinition>> customTypeResolver) : base(
       jsonString, externalTilesetResolver, externalTemplateResolver, customTypeResolver)
   { }
 
   /// <inheritdoc/>
   public Template ReadTemplate() => ReadTemplate(RootElement);
+
+  /// <inheritdoc/>
+  public Task<Template> ReadTemplateAsync() => Task.FromResult(ReadTemplate(RootElement));
 }

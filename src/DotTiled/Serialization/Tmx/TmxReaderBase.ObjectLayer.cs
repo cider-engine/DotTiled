@@ -76,7 +76,7 @@ public abstract partial class TmxReaderBase
     DotTiled.Object obj = null;
     if (templateSource.HasValue)
     {
-      template = _externalTemplateResolver(templateSource.Value);
+      template = _externalTemplateResolver(templateSource.Value).GetAwaiter().GetResult();
       obj = template.Object.Clone();
     }
 

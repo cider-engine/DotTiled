@@ -15,7 +15,7 @@ public abstract partial class TmjReaderBase
 
     if (source.HasValue)
     {
-      var resolvedTileset = CloneTileset(_externalTilesetResolver(source.Value));
+      var resolvedTileset = CloneTileset(_externalTilesetResolver(source.Value).GetAwaiter().GetResult());
       resolvedTileset.FirstGID = firstGID;
       resolvedTileset.Source = source;
       return resolvedTileset;

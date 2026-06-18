@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization;
 
@@ -11,5 +12,5 @@ public interface ITilesetReader : IDisposable
   /// Reads a tileset from the source.
   /// </summary>
   /// <returns>The parsed tileset.</returns>
-  Tileset ReadTileset();
+  Task<Tileset> ReadTilesetAsync();
 }

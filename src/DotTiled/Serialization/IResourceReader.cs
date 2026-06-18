@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+
 namespace DotTiled.Serialization;
 
 /// <summary>
@@ -10,5 +12,5 @@ public interface IResourceReader
   /// </summary>
   /// <param name="resourcePath">The path to the Tiled resource, which can be a Map file, Tileset file, Template file, etc.</param>
   /// <returns>The content of the resource as a string.</returns>
-  string Read(string resourcePath);
+  Task<string> ReadAsync(string resourcePath);
 }

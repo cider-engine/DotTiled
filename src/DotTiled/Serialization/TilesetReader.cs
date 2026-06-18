@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Xml;
 using DotTiled.Serialization.Tmj;
 using DotTiled.Serialization.Tmx;
@@ -12,8 +13,8 @@ namespace DotTiled.Serialization;
 public class TilesetReader : ITilesetReader
 {
   // External resolvers
-  private readonly Func<string, Tileset> _externalTilesetResolver;
-  private readonly Func<string, Template> _externalTemplateResolver;
+  private readonly Func<string, Task<Tileset>> _externalTilesetResolver;
+  private readonly Func<string, Task<Template>> _externalTemplateResolver;
   private readonly Func<string, Optional<ICustomTypeDefinition>> _customTypeResolver;
 
   private readonly StringReader _tilesetStringReader;
@@ -31,8 +32,8 @@ public class TilesetReader : ITilesetReader
   /// <exception cref="ArgumentNullException">Thrown when any of the arguments are null.</exception>
   public TilesetReader(
     string tileset,
-    Func<string, Tileset> externalTilesetResolver,
-    Func<string, Template> externalTemplateResolver,
+    Func<string, Task<Tileset>> externalTilesetResolver,
+    Func<string, Task<Template>> externalTemplateResolver,
     Func<string, Optional<ICustomTypeDefinition>> customTypeResolver)
   {
     _externalTilesetResolver = externalTilesetResolver ?? throw new ArgumentNullException(nameof(externalTilesetResolver));
@@ -53,7 +54,10 @@ public class TilesetReader : ITilesetReader
   }
 
   /// <inheritdoc />
-  public Tileset ReadTileset() => _tilesetReader.ReadTileset();
+  public Tileset ReadTileset() => ReadTilesetAsync().GetAwaiter().GetResult();
+
+  /// <inheritdoc />
+  public Task<Tileset> ReadTilesetAsync() => _tilesetReader.ReadTilesetAsync();
 
   /// <inheritdoc />
   protected virtual void Dispose(bool disposing)

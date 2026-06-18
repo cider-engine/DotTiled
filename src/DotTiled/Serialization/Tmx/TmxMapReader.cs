@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace DotTiled.Serialization.Tmx;
@@ -14,12 +15,15 @@ public class TmxMapReader : TmxReaderBase, IMapReader
   /// <inheritdoc />
   public TmxMapReader(
     XmlReader reader,
-    Func<string, Tileset> externalTilesetResolver,
-    Func<string, Template> externalTemplateResolver,
+    Func<string, Task<Tileset>> externalTilesetResolver,
+    Func<string, Task<Template>> externalTemplateResolver,
     Func<string, Optional<ICustomTypeDefinition>> customTypeResolver) : base(
       reader, externalTilesetResolver, externalTemplateResolver, customTypeResolver)
   { }
 
   /// <inheritdoc/>
   public new Map ReadMap() => base.ReadMap();
+
+  /// <inheritdoc/>
+  public Task<Map> ReadMapAsync() => Task.FromResult(base.ReadMap());
 }

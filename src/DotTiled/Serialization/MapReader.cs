@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Xml;
 using DotTiled.Serialization.Tmj;
 using DotTiled.Serialization.Tmx;
@@ -12,8 +13,8 @@ namespace DotTiled.Serialization;
 public class MapReader : IMapReader
 {
   // External resolvers
-  private readonly Func<string, Tileset> _externalTilesetResolver;
-  private readonly Func<string, Template> _externalTemplateResolver;
+  private readonly Func<string, Task<Tileset>> _externalTilesetResolver;
+  private readonly Func<string, Task<Template>> _externalTemplateResolver;
   private readonly Func<string, Optional<ICustomTypeDefinition>> _customTypeResolver;
 
   private readonly StringReader _mapStringReader;
@@ -31,8 +32,8 @@ public class MapReader : IMapReader
   /// <exception cref="ArgumentNullException">Thrown when any of the arguments are null.</exception>
   public MapReader(
     string map,
-    Func<string, Tileset> externalTilesetResolver,
-    Func<string, Template> externalTemplateResolver,
+    Func<string, Task<Tileset>> externalTilesetResolver,
+    Func<string, Task<Template>> externalTemplateResolver,
     Func<string, Optional<ICustomTypeDefinition>> customTypeResolver)
   {
     _externalTilesetResolver = externalTilesetResolver ?? throw new ArgumentNullException(nameof(externalTilesetResolver));
@@ -53,7 +54,10 @@ public class MapReader : IMapReader
   }
 
   /// <inheritdoc />
-  public Map ReadMap() => _mapReader.ReadMap();
+  public Map ReadMap() => ReadMapAsync().GetAwaiter().GetResult();
+
+  /// <inheritdoc />
+  public Task<Map> ReadMapAsync() => _mapReader.ReadMapAsync();
 
   /// <inheritdoc />
   protected virtual void Dispose(bool disposing)

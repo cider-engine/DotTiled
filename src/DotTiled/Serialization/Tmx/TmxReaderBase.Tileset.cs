@@ -18,7 +18,7 @@ public abstract partial class TmxReaderBase
     if (source.HasValue && firstGID.HasValue)
     {
       // Is external tileset
-      var externalTileset = CloneTileset(_externalTilesetResolver(source.Value));
+      var externalTileset = CloneTileset(_externalTilesetResolver(source.Value).GetAwaiter().GetResult());
       externalTileset.FirstGID = firstGID;
       externalTileset.Source = source;
 
