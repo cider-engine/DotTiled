@@ -37,7 +37,7 @@ public abstract partial class TmjReaderBase : IDisposable
     Func<string, Task<Template>> externalTemplateResolver,
     Func<string, Optional<ICustomTypeDefinition>> customTypeResolver)
   {
-    RootElement = JsonDocument.Parse(jsonString ?? throw new ArgumentNullException(nameof(jsonString))).RootElement;
+    RootElement = JsonElement.Parse(jsonString ?? throw new ArgumentNullException(nameof(jsonString)));
     _externalTilesetResolver = externalTilesetResolver ?? throw new ArgumentNullException(nameof(externalTilesetResolver));
     _externalTemplateResolver = externalTemplateResolver ?? throw new ArgumentNullException(nameof(externalTemplateResolver));
     _customTypeResolver = customTypeResolver ?? throw new ArgumentNullException(nameof(customTypeResolver));

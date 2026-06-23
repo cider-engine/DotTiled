@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization.Tmx;
 
 public abstract partial class TmxReaderBase
 {
-  internal Tileset ReadTileset(
+  internal async Task<Tileset> ReadTilesetAsync(
     Optional<string> parentVersion = default,
     Optional<string> parentTiledVersion = default)
   {
@@ -18,7 +19,7 @@ public abstract partial class TmxReaderBase
     if (source.HasValue && firstGID.HasValue)
     {
       // Is external tileset
-      var externalTileset = CloneTileset(_externalTilesetResolver(source.Value).GetAwaiter().GetResult());
+      var externalTileset = CloneTileset(await _externalTilesetResolver(source.Value));
       externalTileset.FirstGID = firstGID;
       externalTileset.Source = source;
 
@@ -74,16 +75,16 @@ public abstract partial class TmxReaderBase
     Transformations transformations = null;
     List<Tile> tiles = [];
 
-    _reader.ProcessChildren("tileset", (r, elementName) => elementName switch
+    await _reader.ProcessChildren("tileset", (r, elementName) => elementName switch
     {
-      "image" => () => Helpers.SetAtMostOnce(ref image, ReadImage(), "Image"),
-      "tileoffset" => () => Helpers.SetAtMostOnce(ref tileOffset, ReadTileOffset(), "TileOffset"),
-      "grid" => () => Helpers.SetAtMostOnce(ref grid, ReadGrid(), "Grid"),
-      "properties" => () => Helpers.SetAtMostOnceUsingCounter(ref properties, Helpers.MergeProperties(properties, ReadProperties()).ToList(), "Properties", ref propertiesCounter),
-      "wangsets" => () => Helpers.SetAtMostOnce(ref wangsets, ReadWangsets(), "Wangsets"),
-      "transformations" => () => Helpers.SetAtMostOnce(ref transformations, ReadTransformations(), "Transformations"),
-      "tile" => () => tiles.Add(ReadTile()),
-      _ => r.Skip
+      "image" => () => { Helpers.SetAtMostOnce(ref image, ReadImage(), "Image"); return Task.CompletedTask; },
+      "tileoffset" => () => { Helpers.SetAtMostOnce(ref tileOffset, ReadTileOffset(), "TileOffset"); return Task.CompletedTask; },
+      "grid" => () => { Helpers.SetAtMostOnce(ref grid, ReadGrid(), "Grid"); return Task.CompletedTask; },
+      "properties" => () => { Helpers.SetAtMostOnceUsingCounter(ref properties, Helpers.MergeProperties(properties, ReadProperties()).ToList(), "Properties", ref propertiesCounter); return Task.CompletedTask; },
+      "wangsets" => () => { Helpers.SetAtMostOnce(ref wangsets, ReadWangsets(), "Wangsets"); return Task.CompletedTask; },
+      "transformations" => () => { Helpers.SetAtMostOnce(ref transformations, ReadTransformations(), "Transformations"); return Task.CompletedTask; },
+      "tile" => async () => tiles.Add(await ReadTileAsync()),
+      _ => () => { r.Skip(); return Task.CompletedTask; }
     });
 
     return new Tileset
@@ -186,7 +187,7 @@ public abstract partial class TmxReaderBase
     return new Transformations { HFlip = hFlip, VFlip = vFlip, Rotate = rotate, PreferUntransformed = preferUntransformed };
   }
 
-  internal Tile ReadTile()
+  internal async Task<Tile> ReadTileAsync()
   {
     // Attributes
     var id = _reader.GetRequiredAttributeParseable<uint>("id");
@@ -204,18 +205,18 @@ public abstract partial class TmxReaderBase
     ObjectLayer objectLayer = null;
     List<Frame> animation = null;
 
-    _reader.ProcessChildren("tile", (r, elementName) => elementName switch
+    await _reader.ProcessChildren("tile", (r, elementName) => elementName switch
     {
-      "properties" => () => Helpers.SetAtMostOnceUsingCounter(ref properties, Helpers.MergeProperties(properties, ReadProperties()).ToList(), "Properties", ref propertiesCounter),
-      "image" => () => Helpers.SetAtMostOnce(ref image, ReadImage(), "Image"),
-      "objectgroup" => () => Helpers.SetAtMostOnce(ref objectLayer, ReadObjectLayer(), "ObjectLayer"),
-      "animation" => () => Helpers.SetAtMostOnce(ref animation, r.ReadList<Frame>("animation", "frame", (ar) =>
+      "properties" => () => { Helpers.SetAtMostOnceUsingCounter(ref properties, Helpers.MergeProperties(properties, ReadProperties()).ToList(), "Properties", ref propertiesCounter); return Task.CompletedTask; },
+      "image" => () => { Helpers.SetAtMostOnce(ref image, ReadImage(), "Image"); return Task.CompletedTask; },
+      "objectgroup" => async () => Helpers.SetAtMostOnce(ref objectLayer, await ReadObjectLayerAsync(), "ObjectLayer"),
+      "animation" => () => { Helpers.SetAtMostOnce(ref animation, r.ReadList<Frame>("animation", "frame", (ar) =>
       {
         var tileID = ar.GetRequiredAttributeParseable<uint>("tileid");
         var duration = ar.GetRequiredAttributeParseable<int>("duration");
         return new Frame { TileID = tileID, Duration = duration };
-      }), "Animation"),
-      _ => r.Skip
+      }), "Animation"); return Task.CompletedTask; },
+      _ => () => { r.Skip(); return Task.CompletedTask; }
     });
 
     return new Tile

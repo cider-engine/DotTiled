@@ -22,8 +22,8 @@ public class TsxTilesetReader : TmxReaderBase, ITilesetReader
   { }
 
   /// <inheritdoc/>
-  public Tileset ReadTileset() => base.ReadTileset();
+  public Tileset ReadTileset() => ReadTilesetAsync().GetAwaiter().GetResult();
 
   /// <inheritdoc/>
-  public Task<Tileset> ReadTilesetAsync() => Task.FromResult(base.ReadTileset());
+  public Task<Tileset> ReadTilesetAsync() => base.ReadTilesetAsync();
 }

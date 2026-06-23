@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization.Tmx;
 
 public abstract partial class TmxReaderBase
 {
-  internal ObjectLayer ReadObjectLayer()
+  internal async Task<ObjectLayer> ReadObjectLayerAsync()
   {
     // Attributes
     var id = _reader.GetRequiredAttributeParseable<uint>("id");
@@ -38,11 +39,11 @@ public abstract partial class TmxReaderBase
     List<IProperty> properties = Helpers.ResolveClassProperties(@class, _customTypeResolver);
     List<DotTiled.Object> objects = [];
 
-    _reader.ProcessChildren("objectgroup", (r, elementName) => elementName switch
+    await _reader.ProcessChildren("objectgroup", (r, elementName) => elementName switch
     {
-      "properties" => () => Helpers.SetAtMostOnceUsingCounter(ref properties, Helpers.MergeProperties(properties, ReadProperties()).ToList(), "Properties", ref propertiesCounter),
-      "object" => () => objects.Add(ReadObject()),
-      _ => r.Skip
+      "properties" => () => { Helpers.SetAtMostOnceUsingCounter(ref properties, Helpers.MergeProperties(properties, ReadProperties()).ToList(), "Properties", ref propertiesCounter); return Task.CompletedTask; },
+      "object" => async () => objects.Add(await ReadObjectAsync()),
+      _ => () => { r.Skip(); return Task.CompletedTask; }
     });
 
     return new ObjectLayer
@@ -68,7 +69,7 @@ public abstract partial class TmxReaderBase
     };
   }
 
-  internal DotTiled.Object ReadObject()
+  internal async Task<DotTiled.Object> ReadObjectAsync()
   {
     // Attributes
     var templateSource = _reader.GetOptionalAttribute("template");
@@ -76,7 +77,7 @@ public abstract partial class TmxReaderBase
     DotTiled.Object obj = null;
     if (templateSource.HasValue)
     {
-      template = _externalTemplateResolver(templateSource.Value).GetAwaiter().GetResult();
+      template = await _externalTemplateResolver(templateSource.Value);
       obj = template.Object.Clone();
     }
 
@@ -316,7 +317,7 @@ public abstract partial class TmxReaderBase
     return obj;
   }
 
-  internal Template ReadTemplate()
+  internal async Task<Template> ReadTemplateAsync()
   {
     // No attributes
 
@@ -326,11 +327,11 @@ public abstract partial class TmxReaderBase
     // Should contain exactly one of
     DotTiled.Object obj = null;
 
-    _reader.ProcessChildren("template", (r, elementName) => elementName switch
+    await _reader.ProcessChildren("template", (r, elementName) => elementName switch
     {
-      "tileset" => () => Helpers.SetAtMostOnce(ref tileset, ReadTileset(), "Tileset"),
-      "object" => () => Helpers.SetAtMostOnce(ref obj, ReadObject(), "Object"),
-      _ => r.Skip
+      "tileset" => async () => Helpers.SetAtMostOnce(ref tileset, await ReadTilesetAsync(), "Tileset"),
+      "object" => async () => Helpers.SetAtMostOnce(ref obj, await ReadObjectAsync(), "Object"),
+      _ => () => { r.Skip(); return Task.CompletedTask; }
     });
 
     if (obj is null)

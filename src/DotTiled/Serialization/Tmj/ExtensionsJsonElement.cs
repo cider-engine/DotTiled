@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization.Tmj;
 
@@ -31,13 +32,13 @@ internal static class ExtensionsJsonElement
     bool isNullable = Nullable.GetUnderlyingType(typeof(T)) != null;
 
     if (isNullable && element.ValueKind == JsonValueKind.Null)
-      return default!;
+      return default;
 
-    var realType = isNullable ? Nullable.GetUnderlyingType(typeof(T))! : typeof(T);
+    var realType = isNullable ? Nullable.GetUnderlyingType(typeof(T)) : typeof(T);
 
     string val = realType switch
     {
-      Type t when t == typeof(string) => element.GetString()!,
+      Type t when t == typeof(string) => element.GetString(),
       Type t when t == typeof(int) => element.GetInt32().ToString(CultureInfo.InvariantCulture),
       Type t when t == typeof(uint) => element.GetUInt32().ToString(CultureInfo.InvariantCulture),
       Type t when t == typeof(float) => element.GetSingle().ToString(CultureInfo.InvariantCulture),
@@ -53,7 +54,7 @@ internal static class ExtensionsJsonElement
     if (!element.TryGetProperty(propertyName, out var property))
       throw new JsonException($"Missing required property '{propertyName}'.");
 
-    return T.Parse(property.GetString()!, CultureInfo.InvariantCulture);
+    return T.Parse(property.GetString(), CultureInfo.InvariantCulture);
   }
 
   internal static T GetRequiredPropertyParseable<T>(this JsonElement element, string propertyName, Func<string, T> parser)
@@ -61,7 +62,7 @@ internal static class ExtensionsJsonElement
     if (!element.TryGetProperty(propertyName, out var property))
       throw new JsonException($"Missing required property '{propertyName}'.");
 
-    return parser(property.GetString()!);
+    return parser(property.GetString());
   }
 
   internal static Optional<T> GetOptionalPropertyParseable<T>(this JsonElement element, string propertyName) where T : IParsable<T>
@@ -69,7 +70,7 @@ internal static class ExtensionsJsonElement
     if (!element.TryGetProperty(propertyName, out var property))
       return Optional.Empty;
 
-    return T.Parse(property.GetString()!, CultureInfo.InvariantCulture);
+    return T.Parse(property.GetString(), CultureInfo.InvariantCulture);
   }
 
   internal static Optional<T> GetOptionalPropertyParseable<T>(this JsonElement element, string propertyName, Func<string, Optional<T>> parser)
@@ -77,10 +78,18 @@ internal static class ExtensionsJsonElement
     if (!element.TryGetProperty(propertyName, out var property))
       return Optional.Empty;
 
-    return parser(property.GetString()!);
+    return parser(property.GetString());
   }
 
   internal static T GetRequiredPropertyCustom<T>(this JsonElement element, string propertyName, Func<JsonElement, T> parser)
+  {
+    if (!element.TryGetProperty(propertyName, out var property))
+      throw new JsonException($"Missing required property '{propertyName}'.");
+
+    return parser(property);
+  }
+
+  internal static Task<T> GetRequiredPropertyCustomAsync<T>(this JsonElement element, string propertyName, Func<JsonElement, Task<T>> parser)
   {
     if (!element.TryGetProperty(propertyName, out var property))
       throw new JsonException($"Missing required property '{propertyName}'.");
@@ -96,12 +105,30 @@ internal static class ExtensionsJsonElement
     return parser(property);
   }
 
+  internal static async Task<Optional<T>> GetOptionalPropertyCustomAsync<T>(this JsonElement element, string propertyName, Func<JsonElement, Task<T>> parser)
+  {
+    if (!element.TryGetProperty(propertyName, out var property))
+      return Optional.Empty;
+
+    return await parser(property);
+  }
+
   internal static List<T> GetValueAsList<T>(this JsonElement element, Func<JsonElement, T> parser)
   {
     var list = new List<T>();
 
     foreach (var item in element.EnumerateArray())
       list.Add(parser(item));
+
+    return list;
+  }
+
+  internal static async Task<List<T>> GetValueAsListAsync<T>(this JsonElement element, Func<JsonElement, Task<T>> parser)
+  {
+    var list = new List<T>();
+
+    foreach (var item in element.EnumerateArray())
+      list.Add(await parser(item));
 
     return list;
   }

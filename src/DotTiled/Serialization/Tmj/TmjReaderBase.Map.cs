@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization.Tmj;
 
 public abstract partial class TmjReaderBase
 {
-  internal Map ReadMap(JsonElement element)
+  internal async Task<Map> ReadMapAsync(JsonElement element)
   {
     var version = element.GetRequiredProperty<string>("version");
     var tiledVersion = element.GetRequiredProperty<string>("tiledversion");
@@ -54,8 +55,8 @@ public abstract partial class TmjReaderBase
 
     var properties = ResolveAndMergeProperties(@class, element.GetOptionalPropertyCustom("properties", ReadProperties).GetValueOr([]));
 
-    List<BaseLayer> layers = element.GetOptionalPropertyCustom<List<BaseLayer>>("layers", e => e.GetValueAsList<BaseLayer>(el => ReadLayer(el))).GetValueOr([]);
-    List<Tileset> tilesets = element.GetOptionalPropertyCustom<List<Tileset>>("tilesets", e => e.GetValueAsList<Tileset>(el => ReadTileset(el, version, tiledVersion))).GetValueOr([]);
+    List<BaseLayer> layers = (await element.GetOptionalPropertyCustomAsync<List<BaseLayer>>("layers", e => e.GetValueAsListAsync<BaseLayer>(el => ReadLayerAsync(el)))).GetValueOr([]);
+    List<Tileset> tilesets = (await element.GetOptionalPropertyCustomAsync<List<Tileset>>("tilesets", e => e.GetValueAsListAsync<Tileset>(el => ReadTilesetAsync(el, version, tiledVersion)))).GetValueOr([]);
 
     return new Map
     {

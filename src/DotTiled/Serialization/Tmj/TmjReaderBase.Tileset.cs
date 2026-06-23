@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization.Tmj;
 
 public abstract partial class TmjReaderBase
 {
-  internal Tileset ReadTileset(
+  internal async Task<Tileset> ReadTilesetAsync(
     JsonElement element,
     Optional<string> parentVersion = default,
     Optional<string> parentTiledVersion = default)
@@ -15,7 +16,7 @@ public abstract partial class TmjReaderBase
 
     if (source.HasValue)
     {
-      var resolvedTileset = CloneTileset(_externalTilesetResolver(source.Value).GetAwaiter().GetResult());
+      var resolvedTileset = CloneTileset(await _externalTilesetResolver(source.Value));
       resolvedTileset.FirstGID = firstGID;
       resolvedTileset.Source = source;
       return resolvedTileset;
@@ -62,7 +63,7 @@ public abstract partial class TmjReaderBase
       "grid" => TileRenderSize.Grid,
       _ => throw new JsonException($"Unknown tile render size '{s}'")
     }).GetValueOr(TileRenderSize.Tile);
-    var tiles = element.GetOptionalPropertyCustom<List<Tile>>("tiles", ReadTiles).GetValueOr([]);
+    var tiles = (await element.GetOptionalPropertyCustomAsync<List<Tile>>("tiles", ReadTilesAsync)).GetValueOr([]);
     var tileWidth = element.GetRequiredProperty<int>("tilewidth");
     var transparentColor = element.GetOptionalPropertyParseable<TiledColor>("transparentcolor");
     var version = element.GetOptionalProperty<string>("version").GetValueOrOptional(parentVersion);
@@ -152,8 +153,8 @@ public abstract partial class TmjReaderBase
     };
   }
 
-  internal List<Tile> ReadTiles(JsonElement element) =>
-    element.GetValueAsList<Tile>(e =>
+  internal Task<List<Tile>> ReadTilesAsync(JsonElement element) =>
+    element.GetValueAsListAsync<Tile>(async e =>
     {
       var animation = e.GetOptionalPropertyCustom<List<Frame>>("animation", e => e.GetValueAsList<Frame>(ReadFrame)).GetValueOr([]);
       var id = e.GetRequiredProperty<uint>("id");
@@ -164,7 +165,7 @@ public abstract partial class TmjReaderBase
       var y = e.GetOptionalProperty<int>("y").GetValueOr(0);
       var width = e.GetOptionalProperty<int>("width").GetValueOr(imageWidth.GetValueOr(0));
       var height = e.GetOptionalProperty<int>("height").GetValueOr(imageHeight.GetValueOr(0));
-      var objectGroup = e.GetOptionalPropertyCustom<ObjectLayer>("objectgroup", e => ReadObjectLayer(e));
+      var objectGroup = await e.GetOptionalPropertyCustomAsync<ObjectLayer>("objectgroup", e => ReadObjectLayerAsync(e));
       var probability = e.GetOptionalProperty<float>("probability").GetValueOr(0.0f);
       var type = e.GetOptionalProperty<string>("type").GetValueOr("");
       var properties = ResolveAndMergeProperties(type, e.GetOptionalPropertyCustom("properties", ReadProperties).GetValueOr([]));

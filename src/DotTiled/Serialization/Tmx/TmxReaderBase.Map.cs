@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization.Tmx;
 
@@ -10,7 +11,7 @@ namespace DotTiled.Serialization.Tmx;
 /// </summary>
 public abstract partial class TmxReaderBase
 {
-  internal Map ReadMap()
+  internal async Task<Map> ReadMapAsync()
   {
     // Attributes
     var version = _reader.GetRequiredAttribute("version");
@@ -64,15 +65,15 @@ public abstract partial class TmxReaderBase
     List<BaseLayer> layers = [];
     List<Tileset> tilesets = [];
 
-    _reader.ProcessChildren("map", (r, elementName) => elementName switch
+    await _reader.ProcessChildren("map", (r, elementName) => elementName switch
     {
-      "properties" => () => Helpers.SetAtMostOnceUsingCounter(ref properties, Helpers.MergeProperties(properties, ReadProperties()).ToList(), "Properties", ref propertiesCounter),
-      "tileset" => () => tilesets.Add(ReadTileset(version, tiledVersion)),
-      "layer" => () => layers.Add(ReadTileLayer(infinite)),
-      "objectgroup" => () => layers.Add(ReadObjectLayer()),
-      "imagelayer" => () => layers.Add(ReadImageLayer()),
-      "group" => () => layers.Add(ReadGroup()),
-      _ => r.Skip
+      "properties" => () => { Helpers.SetAtMostOnceUsingCounter(ref properties, Helpers.MergeProperties(properties, ReadProperties()).ToList(), "Properties", ref propertiesCounter); return Task.CompletedTask; },
+      "tileset" => async () => tilesets.Add(await ReadTilesetAsync(version, tiledVersion)),
+      "layer" => () => { layers.Add(ReadTileLayer(infinite)); return Task.CompletedTask; },
+      "objectgroup" => async () => layers.Add(await ReadObjectLayerAsync()),
+      "imagelayer" => () => { layers.Add(ReadImageLayer()); return Task.CompletedTask; },
+      "group" => async () => layers.Add(await ReadGroupAsync()),
+      _ => () => { r.Skip(); return Task.CompletedTask; }
     });
 
     return new Map

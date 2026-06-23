@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization.Tmx;
 
@@ -103,7 +104,7 @@ public abstract partial class TmxReaderBase
     };
   }
 
-  internal Group ReadGroup()
+  internal async Task<Group> ReadGroupAsync()
   {
     var id = _reader.GetRequiredAttributeParseable<uint>("id");
     var name = _reader.GetOptionalAttribute("name").GetValueOr("");
@@ -120,14 +121,14 @@ public abstract partial class TmxReaderBase
     List<IProperty> properties = Helpers.ResolveClassProperties(@class, _customTypeResolver);
     List<BaseLayer> layers = [];
 
-    _reader.ProcessChildren("group", (r, elementName) => elementName switch
+    await _reader.ProcessChildren("group", (r, elementName) => elementName switch
     {
-      "properties" => () => Helpers.SetAtMostOnceUsingCounter(ref properties, Helpers.MergeProperties(properties, ReadProperties()).ToList(), "Properties", ref propertiesCounter),
-      "layer" => () => layers.Add(ReadTileLayer(false)),
-      "objectgroup" => () => layers.Add(ReadObjectLayer()),
-      "imagelayer" => () => layers.Add(ReadImageLayer()),
-      "group" => () => layers.Add(ReadGroup()),
-      _ => r.Skip
+      "properties" => () => { Helpers.SetAtMostOnceUsingCounter(ref properties, Helpers.MergeProperties(properties, ReadProperties()).ToList(), "Properties", ref propertiesCounter); return Task.CompletedTask; },
+      "layer" => () => { layers.Add(ReadTileLayer(false)); return Task.CompletedTask; },
+      "objectgroup" => async () => layers.Add(await ReadObjectLayerAsync()),
+      "imagelayer" => () => { layers.Add(ReadImageLayer()); return Task.CompletedTask; },
+      "group" => async () => layers.Add(await ReadGroupAsync()),
+      _ => () => { r.Skip(); return Task.CompletedTask; }
     });
 
     return new Group

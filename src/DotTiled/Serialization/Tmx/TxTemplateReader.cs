@@ -22,8 +22,8 @@ public class TxTemplateReader : TmxReaderBase, ITemplateReader
   { }
 
   /// <inheritdoc/>
-  public new Template ReadTemplate() => base.ReadTemplate();
+  public Template ReadTemplate() => ReadTemplateAsync().GetAwaiter().GetResult();
 
   /// <inheritdoc/>
-  public Task<Template> ReadTemplateAsync() => Task.FromResult(base.ReadTemplate());
+  public new Task<Template> ReadTemplateAsync() => base.ReadTemplateAsync();
 }

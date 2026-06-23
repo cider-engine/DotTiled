@@ -3,12 +3,13 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization.Tmj;
 
 public abstract partial class TmjReaderBase
 {
-  internal ObjectLayer ReadObjectLayer(JsonElement element)
+  internal async Task<ObjectLayer> ReadObjectLayerAsync(JsonElement element)
   {
     var id = element.GetRequiredProperty<uint>("id");
     var name = element.GetRequiredProperty<string>("name");
@@ -34,7 +35,7 @@ public abstract partial class TmjReaderBase
       _ => throw new JsonException($"Unknown draw order '{s}'.")
     }).GetValueOr(DrawOrder.TopDown);
 
-    var objects = element.GetOptionalPropertyCustom<List<DotTiled.Object>>("objects", e => e.GetValueAsList<DotTiled.Object>(el => ReadObject(el))).GetValueOr([]);
+    var objects = (await element.GetOptionalPropertyCustomAsync<List<DotTiled.Object>>("objects", e => e.GetValueAsListAsync<DotTiled.Object>(el => ReadObjectAsync(el)))).GetValueOr([]);
 
     return new ObjectLayer
     {
@@ -59,7 +60,7 @@ public abstract partial class TmjReaderBase
     };
   }
 
-  internal DotTiled.Object ReadObject(JsonElement element)
+  internal async Task<DotTiled.Object> ReadObjectAsync(JsonElement element)
   {
     Optional<uint> idDefault = Optional.Empty;
     string nameDefault = "";
@@ -82,7 +83,7 @@ public abstract partial class TmjReaderBase
     Template template = null;
     if (templateSource.HasValue)
     {
-      template = _externalTemplateResolver(templateSource.Value).GetAwaiter().GetResult();
+      template = await _externalTemplateResolver(templateSource.Value);
       var templObj = template.Object.Clone();
 
       idDefault = templObj.ID;

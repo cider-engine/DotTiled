@@ -22,8 +22,8 @@ public class TmxMapReader : TmxReaderBase, IMapReader
   { }
 
   /// <inheritdoc/>
-  public new Map ReadMap() => base.ReadMap();
+  public Map ReadMap() => ReadMapAsync().GetAwaiter().GetResult();
 
   /// <inheritdoc/>
-  public Task<Map> ReadMapAsync() => Task.FromResult(base.ReadMap());
+  public new Task<Map> ReadMapAsync() => base.ReadMapAsync();
 }

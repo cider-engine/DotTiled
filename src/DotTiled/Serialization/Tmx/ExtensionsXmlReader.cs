@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace DotTiled.Serialization.Tmx;
@@ -108,6 +109,24 @@ internal static class ExtensionsXmlReader
       var elementName = reader.Name;
       var action = getProcessAction(reader, elementName);
       action();
+    }
+    reader.ReadEndElement();
+  }
+
+  internal static async Task ProcessChildren(this XmlReader reader, string wrapper, Func<XmlReader, string, Func<Task>> getProcessAction)
+  {
+    if (reader.IsEmptyElement)
+    {
+      reader.ReadStartElement(wrapper);
+      return;
+    }
+
+    reader.ReadStartElement(wrapper);
+    while (reader.IsStartElement())
+    {
+      var elementName = reader.Name;
+      var action = getProcessAction(reader, elementName);
+      await action();
     }
     reader.ReadEndElement();
   }

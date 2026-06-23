@@ -25,8 +25,8 @@ public class TjTemplateReader : TmjReaderBase, ITemplateReader
   { }
 
   /// <inheritdoc/>
-  public Template ReadTemplate() => ReadTemplate(RootElement);
+  public Template ReadTemplate() => ReadTemplate(RootElement).GetAwaiter().GetResult();
 
   /// <inheritdoc/>
-  public Task<Template> ReadTemplateAsync() => Task.FromResult(ReadTemplate(RootElement));
+  public Task<Template> ReadTemplateAsync() => ReadTemplate(RootElement);
 }

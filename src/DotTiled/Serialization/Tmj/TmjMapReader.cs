@@ -25,8 +25,8 @@ public class TmjMapReader : TmjReaderBase, IMapReader
   { }
 
   /// <inheritdoc/>
-  public Map ReadMap() => ReadMap(RootElement);
+  public Map ReadMap() => ReadMapAsync().GetAwaiter().GetResult();
 
   /// <inheritdoc/>
-  public Task<Map> ReadMapAsync() => Task.FromResult(ReadMap(RootElement));
+  public Task<Map> ReadMapAsync() => ReadMapAsync(RootElement);
 }

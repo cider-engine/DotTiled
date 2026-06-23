@@ -1,14 +1,15 @@
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization.Tmj;
 
 public abstract partial class TmjReaderBase
 {
-  internal Template ReadTemplate(JsonElement element)
+  internal async Task<Template> ReadTemplate(JsonElement element)
   {
     var type = element.GetRequiredProperty<string>("type");
-    var tileset = element.GetOptionalPropertyCustom<Tileset>("tileset", e => ReadTileset(e));
-    var @object = element.GetRequiredPropertyCustom<DotTiled.Object>("object", ReadObject);
+    var tileset = await element.GetOptionalPropertyCustomAsync<Tileset>("tileset", e => ReadTilesetAsync(e));
+    var @object = await element.GetRequiredPropertyCustomAsync<DotTiled.Object>("object", ReadObjectAsync);
 
     return new Template
     {

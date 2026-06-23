@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace DotTiled.Serialization.Tmj;
 
 public abstract partial class TmjReaderBase
 {
-  internal Group ReadGroup(JsonElement element)
+  internal async Task<Group> ReadGroupAsync(JsonElement element)
   {
     var id = element.GetRequiredProperty<uint>("id");
     var name = element.GetRequiredProperty<string>("name");
@@ -18,7 +19,7 @@ public abstract partial class TmjReaderBase
     var parallaxX = element.GetOptionalProperty<float>("parallaxx").GetValueOr(1.0f);
     var parallaxY = element.GetOptionalProperty<float>("parallaxy").GetValueOr(1.0f);
     var properties = ResolveAndMergeProperties(@class, element.GetOptionalPropertyCustom("properties", ReadProperties).GetValueOr([]));
-    var layers = element.GetOptionalPropertyCustom<List<BaseLayer>>("layers", e => e.GetValueAsList<BaseLayer>(ReadLayer)).GetValueOr([]);
+    var layers = (await element.GetOptionalPropertyCustomAsync<List<BaseLayer>>("layers", e => e.GetValueAsListAsync<BaseLayer>(ReadLayerAsync))).GetValueOr([]);
 
     return new Group
     {
