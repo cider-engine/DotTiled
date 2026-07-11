@@ -56,7 +56,7 @@ public readonly struct Optional<T>
   /// <para>The value if <see cref="HasValue"/> is <see langword="true"/>; otherwise, the default value for type
   /// <typeparamref name="T"/>.</para>
   /// </returns>
-  public T Value => HasValue ? _value : throw new InvalidOperationException("Value is not set");
+  public T Value => HasValue ? _value : default;
 
   /// <summary>
   /// Creates a new object initialized to a meaningful value.
@@ -161,7 +161,7 @@ public readonly struct Optional<T>
   }
 
   /// <inheritdoc />
-  public override int GetHashCode() => HasValue ? _value!.GetHashCode() : 0;
+  public override int GetHashCode() => HasValue ? _value.GetHashCode() : 0;
 
   /// <summary>
   /// Determines whether the specified <see cref="Optional{T}"/> objects are not equal.
